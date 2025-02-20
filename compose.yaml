@@ -1,0 +1,83 @@
+services:
+
+  multitenant:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    container_name: multitenant
+    env_file:
+      - .env
+    ports:
+      - '${SERVER_PORT}:${SERVER_PORT}'
+      - '${GRPC_PORT}:${GRPC_PORT}'
+    volumes:
+      - .:/app
+    networks:
+      - task_network
+    depends_on:
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    container_name: redis
+    env_file:
+      - .env
+    ports:
+      - '6379:6379'
+    volumes:
+      - ${REDIS_VOLUME}:/var/lib/redis
+    networks:
+      - task_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+
+  mysql:
+    image: mysql:latest
+    restart: always
+    container_name: mysql
+    env_file:
+      - .env
+    ports:
+      - 3306:3306
+    volumes:
+      - ${MYSQL_VOLUME}:/var/lib/mysql
+    networks:
+      - task_network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    container_name: rabbitmq
+    env_file:
+      - .env
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - task_network
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  task_network:
+    name: task_network
+    driver: bridge
