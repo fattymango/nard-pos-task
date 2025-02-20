@@ -76,3 +76,5 @@ alternatively, you can run the following commands:
 ```bash
 go tool pprof -http=":8000" pprofbin ./cpu.pprof
 ```
+
+![profiling](./docs/pprof.png)
